@@ -4,8 +4,8 @@ import ModelView from '@/components/ModelView/index.vue'
 const model = ref<string>('common')
 const modelRef = ref<InstanceType<typeof ModelView> | null>(null)
 
-const rotate = (joint: number) => {
-  modelRef.value.rotate(joint)
+const rotate = () => {
+  modelRef.value.update([0, 0, 90, 0, 90, 0])
 }
 </script>
 
@@ -20,10 +20,10 @@ const rotate = (joint: number) => {
     <option value="common" label="common"></option>
     <option value="s15" label="s15"></option>
   </select>
-  <button @click="rotate(1)">J1</button>
-  <button @click="rotate(2)">J2</button>
-  <button @click="rotate(3)">J3</button>
-  <button @click="rotate(4)">J4</button>
-  <button @click="rotate(5)">J5</button>
-  <button @click="rotate(6)">J6</button>
+  <button @click="rotate">J1</button>
+  <button @click="rotate">J2</button>
+  <button @click="rotate">J3</button>
+  <button @click="rotate">J4</button>
+  <button @click="rotate">J5</button>
+  <button @click="rotate">J6</button>
 </template>
