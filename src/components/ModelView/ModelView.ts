@@ -37,7 +37,7 @@ const createGroup = (
   }
   parentGroup.add(groupObj)
 }
-const modelMap = new Map<any, THREE.Object3D>()
+const modelMap = new Map<ModelType, THREE.Object3D>()
 
 export default class ModelView {
   private $el: HTMLElement | null = null
@@ -57,7 +57,7 @@ export default class ModelView {
   scale: number = 1
   axesSize: number = 400
   background: number
-  fov: number = 0
+  private fov: number = 0
 
   constructor(options: ModelOptions) {
     this.$options = options
@@ -84,7 +84,9 @@ export default class ModelView {
   }
 
   private initScene(): void {
-    this.scene = new THREE.Scene()
+    const scene = new THREE.Scene()
+    // scene.position.set(-220, -60, 0)
+    this.scene = scene
   }
 
   private initCamera(): void {
@@ -92,11 +94,13 @@ export default class ModelView {
       this.fov,
       this.width / this.height,
       0.5,
-      100000
+      1000000
     )
-    camera.position.set(350, 220, 400)
+    camera.up.set(0, 1, 0)
+    camera.position.set(-320, 180, 10)
     camera.lookAt(this.scene!.position)
     this.camera = camera
+    this.scene!.add(camera)
   }
 
   private initLight(): void {
@@ -119,13 +123,12 @@ export default class ModelView {
   private initAxes(): void {
     // 辅助三维坐标系
     const axesHelper = new THREE.AxesHelper(this.axesSize)
+    axesHelper.rotateZ((180 * Math.PI) / 180)
+    axesHelper.rotateX((90 * Math.PI) / 180)
     this.scene!.add(axesHelper)
     this.axes = axesHelper
 
     //#region
-    // axesHelper.rotateY((-90 * Math.PI) / 180)
-    // axesHelper.rotateX((-90 * Math.PI) / 180)
-
     // 添加坐标系方向指示;
     /* const dir1 = new THREE.Vector3(axesSize, 0, 0)
     dir1.normalize()
@@ -286,7 +289,7 @@ export default class ModelView {
     this.$el!.removeChild(this.render!.domElement)
     this.render!.clearStencil()
     this.render!.dispose()
-    this.scene!.remove()
+    this.scene!.remove(this.scene!.getObjectByName('base')!)
     this.models = models
     this.init()
   }
