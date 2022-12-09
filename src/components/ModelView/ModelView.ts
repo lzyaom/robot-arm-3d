@@ -8,6 +8,7 @@ type ModelOptions = {
   background: number
   models: Array<ModelType>
   fov?: number
+  initPose: Array<number>
 }
 type JointToAngle = {
   [k: string]: number
@@ -60,6 +61,7 @@ export class ModelView {
   axesSize: number = 400
   background: number
   private fov: number = 0
+  private status: 'pending' | 'fulfilled' = 'pending'
 
   constructor(options: ModelOptions) {
     this.$options = options
@@ -71,7 +73,7 @@ export class ModelView {
     this.scale = options.scale
     this.background = options.background
     this.fov = options.fov || 45
-    this.init()
+    this.status === 'pending' && this.init()
   }
 
   private init(): void {
@@ -189,6 +191,7 @@ export class ModelView {
 
         modelMap.set(model, mesh)
         if (this.loadModelCount === this.models.length) {
+          this.status = 'fulfilled'
           this.initGroup()
         }
       })
@@ -197,10 +200,7 @@ export class ModelView {
 
   private initGroup(): void {
     createGroup(this.models[0], this.models, this.scene!)
-    // if (props.model === 's15') {
-    //   const jointObj = scene.getObjectByName('base')!
-    //   jointObj.rotateX(Math.PI / 2)
-    // }
+    this.update(this.$options.initPose)
   }
 
   private renderHandler(): void {
@@ -218,6 +218,9 @@ export class ModelView {
    * @param angles 每个轴的角度
    */
   update(angles: Array<number>): void {
+    if (this.status !== 'fulfilled') {
+      return
+    }
     const rotateAngle = this.rotateAngle.slice()
     const jointToAngleMap: JointToAngle = angles.reduce(
       (prev, item, i: number) => {
@@ -256,7 +259,7 @@ export class ModelView {
    * 放大视图
    */
   zoomIn(): void {
-    this.fov += 5
+    this.fov -= 5
     this.camera!.fov = this.fov
     this.renderHandler()
   }
@@ -265,7 +268,7 @@ export class ModelView {
    * 缩小视图
    */
   zoomOut(): void {
-    this.fov -= 5
+    this.fov += 5
     this.camera!.fov = this.fov
     this.renderHandler()
   }
@@ -304,5 +307,17 @@ export class ModelView {
     this.destory()
     this.models = deepClone(models)
     this.init()
+  }
+}
+
+/**
+ *
+ * @param options
+ * @returns
+ */
+export function createView(options: ModelOptions) {
+  let instance: ModelView
+  return function () {
+    return instance || (instance = new ModelView(options))
   }
 }
