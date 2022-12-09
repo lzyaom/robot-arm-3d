@@ -39,7 +39,9 @@ const createGroup = (
 }
 const modelMap = new Map<ModelType, THREE.Object3D>()
 
-export default class ModelView {
+const deepClone = (params: any) => JSON.parse(JSON.stringify(params))
+
+export class ModelView {
   private $el: HTMLElement | null = null
   private width: number = 0
   private height: number = 0
@@ -65,7 +67,7 @@ export default class ModelView {
     const { clientWidth, clientHeight } = options.el
     this.width = clientWidth
     this.height = clientHeight
-    this.models = options.models
+    this.models = deepClone(options.models) // 因引用类型导致旋转中心会多次与 scale 相成
     this.scale = options.scale
     this.background = options.background
     this.fov = options.fov || 45
@@ -81,6 +83,7 @@ export default class ModelView {
     this.initModel()
     this.initRender()
     this.initControl()
+    this.renderHandler()
   }
 
   private initScene(): void {
@@ -159,13 +162,14 @@ export default class ModelView {
 
   private initControl(): void {
     this.control = new OrbitControls(this.camera!, this.render!.domElement)
-    this.renderHandler()
+    // this.control.addEventListener('change', this.renderHandler.bind(this))
   }
 
   private initModel(): void {
     const loader = new STLLoader()
     this.loader = loader
-    this.models.forEach((model) => {
+    for (let i = 0; i < this.models.length; i++) {
+      const model = this.models[i]
       if (model.center) {
         model.center = model.center.map((item) => item * this.scale)
       }
@@ -188,7 +192,7 @@ export default class ModelView {
           this.initGroup()
         }
       })
-    })
+    }
   }
 
   private initGroup(): void {
@@ -214,10 +218,11 @@ export default class ModelView {
    * @param angles 每个轴的角度
    */
   update(angles: Array<number>): void {
+    const rotateAngle = this.rotateAngle.slice()
     const jointToAngleMap: JointToAngle = angles.reduce(
       (prev, item, i: number) => {
         const j = i + 1
-        if (item !== this.rotateAngle[i] && !prev[j]) {
+        if (item !== rotateAngle[i] && !prev[j]) {
           prev[j] = item
         }
         return prev
@@ -225,7 +230,6 @@ export default class ModelView {
       {} as JointToAngle
     )
     const keys = Object.keys(jointToAngleMap)
-
     if (keys.length === 0) {
       // 没有改变关节角度
       return
@@ -276,7 +280,19 @@ export default class ModelView {
   /**
    *
    */
-  destory(): void {}
+  destory(): void {
+    modelMap.clear()
+    this.scene!.remove()
+    this.scene!.clear()
+    this.$el!.removeChild(this.render!.domElement)
+    this.render!.clear()
+    this.render!.dispose()
+    this.render!.forceContextLoss()
+    // this.render!.content = null
+    // cancelAnimationFrame(animationID) // 去除animationFrame
+    const gl = this.render!.domElement.getContext('webgl')
+    gl && gl.getExtension('WEBGL_lose_context')!.loseContext()
+  }
 
   /**
    * 重置模型
@@ -285,12 +301,8 @@ export default class ModelView {
   reset(models: ModelType[]): void {
     this.loadModelCount = 0
     this.rotateAngle = [0, 0, 0, 0, 0, 0]
-    modelMap.clear()
-    this.$el!.removeChild(this.render!.domElement)
-    this.render!.clearStencil()
-    this.render!.dispose()
-    this.scene!.remove(this.scene!.getObjectByName('base')!)
-    this.models = models
+    this.destory()
+    this.models = deepClone(models)
     this.init()
   }
 }
