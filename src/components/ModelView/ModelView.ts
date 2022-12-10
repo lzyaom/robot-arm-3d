@@ -221,6 +221,7 @@ export class ModelView {
     if (this.status !== 'fulfilled') {
       return
     }
+    angles = angles.map((item) => parseFloat(String(item)))
     const rotateAngle = this.rotateAngle.slice()
     const jointToAngleMap: JointToAngle = angles.reduce(
       (prev, item, i: number) => {
